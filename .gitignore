@@ -1,0 +1,81 @@
+# Eclipse
+.classpath
+.project
+.settings
+
+# /
+/.cvsignore
+/.tomcatplugin
+/work
+/.gwt-cache
+/.externalToolBuilders
+/extras
+
+uitest/src/main/themes/VAADIN/themes/**/styles.css
+test/servlet-containers/karaf/vaadin-karaf-bundle1/src/main/resources/VAADIN/themes/karaftesttheme/styles.css
+
+# Persisted scss cache files
+uitest/src/main/themes/VAADIN/themes/**/styles.scss.cache
+
+# /build/
+/build/result
+/build/gwt
+/build/checkout
+/build/classes
+/build/test-output
+/build/integration-test-output
+/build/buildhelpers/com/vaadin/buildhelpers/*.class
+
+# /tests/
+/tests/junit*.properties
+
+# /bin/
+/bin
+
+# auto generated files
+/node_modules/
+/.npmrc
+/pnpmfile.js
+/package.json
+/pnpm-lock.yaml
+/tsconfig.json
+/types.d.ts
+/webpack.config.js
+/webpack.generated.js
+/frontend/generated/
+/frontend/src/README
+/frontend/styles/README
+
+# Mac
+*.DS_Store
+
+# Python
+scripts/*.pyc
+
+# build result folders
+*/result
+result
+target/
+all/target/
+push/target/
+shared/target/
+server/target/
+client/target/
+client-compiler/target/
+buildhelpers/target/
+client-compiled/target/
+liferay/target/
+themes/target/
+uitest/target/
+widgets/target/
+
+.sass-cache
+phantomjsdriver.log
+
+*.iml
+.idea
+
+*/.checkstyle
+
+# TB default error screenshot folder
+error-screenshots/
