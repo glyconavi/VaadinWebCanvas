@@ -3,14 +3,14 @@ This is a Canvas component for Vaadin 14+. This component provides a some functi
 
 ### How to use
 Add the repository and dependency to your Vaadin 14+ project's pom.xml:
-```
+```xml
 <repository>
     <id>github</id>
     <name>my github repository</name>
     <url>https://raw.githubusercontent.com/glycoinfo/MavenRepository/master/</url>
 </repository>
 ```
-```
+```xml
 <dependency>
     <groupId>org.glycoinfo.vaadin</groupId>
     <artifactId>vaadin-web-canvas</artifactId>
@@ -19,7 +19,7 @@ Add the repository and dependency to your Vaadin 14+ project's pom.xml:
 ```
 
 You can use the cliant side JavaScriptAPI below:
-```
+```java
 // Creates web canvas, and draws rectangle.
 WebCanvas webCanvas = new WebCanvas(800, 800);
 WebCanvasRenderingContext2D renderer = webCanvas.getContext();
@@ -42,3 +42,4 @@ webCanvas.toDataURL("image/png", dataURI -> {
 ### How to test
 * Clone this repository
 * `jetty:run -P debug`
+* This deploys the demo at `http://localhost:8080`
