@@ -2,7 +2,7 @@
 This is a Canvas component for Vaadin 14+. This component provides a some function of [the client side JavaScriptAPI](https://developer.mozilla.org/en-US/docs/Web/API/Canvas_API) to Java users.
 
 ### How to use
-Add the repository and dependency to your Vaadin 14+ resources element of pom.xml:
+Add the repository and dependency to your Vaadin 14+ project's pom.xml:
 ```
 <repository>
     <id>github</id>
