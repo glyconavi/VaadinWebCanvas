@@ -10,23 +10,23 @@ import com.vaadin.flow.server.StreamResource;
 import com.vaadin.flow.server.VaadinSession;
 
 /**
- * The main view contains a button and a click listener.
+ * The main view for web canvas.
  */
 @Route
 @SuppressWarnings("serial")
 public class MainView extends VerticalLayout {
     /**
-     * 
+     * Creates main view for web canvas.
      */
     public MainView() {
-        //
+        // Creates web canvas, and draws rectangle.
         WebCanvas webCanvas = new WebCanvas(800, 800);
         WebCanvasRenderingContext2D renderer = webCanvas.getContext();
         renderer.setFillStyle("#111");
         renderer.fillRect(10, 10, 100, 80);
         add(webCanvas);
 
-        //
+        // Outputs image of be drawn canvas when clicking the anchor.
         webCanvas.toDataURL("image/png", dataURI -> {
             // Calls image dialog to display image.
             String dataURIBase64 = dataURI.replace("data:image/png;base64,", "");
