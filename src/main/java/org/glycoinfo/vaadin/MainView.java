@@ -36,5 +36,10 @@ public class MainView extends VerticalLayout {
             downloadImageAnchor.getElement().setAttribute("download", "structures.png");
             add(downloadImageAnchor);
         });
+
+        // Adds the image to MainView.
+        webCanvas.toImage(image -> {
+            add(image);
+        });
     }
 }
