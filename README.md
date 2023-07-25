@@ -14,7 +14,7 @@ Add the repository and dependency to your Vaadin 14+ project's pom.xml:
 <dependency>
     <groupId>org.glycoinfo.vaadin</groupId>
     <artifactId>vaadin-web-canvas</artifactId>
-    <version>1.0.0.2</version>
+    <version>1.0.0.3</version>
 </dependency>
 ```
 
@@ -36,6 +36,11 @@ webCanvas.toDataURL("image/png", dataURI -> {
     Anchor downloadImageAnchor = new Anchor(VaadinSession.getCurrent().getResourceRegistry().registerResource(streamResource).getResource(), "Download Image");
     downloadImageAnchor.getElement().setAttribute("download", "structures.png");
     add(downloadImageAnchor);
+});
+
+// Adds the image to MainView.
+webCanvas.toImage(image -> {
+    add(image);
 });
 ```
 
