@@ -79,3 +79,8 @@ phantomjsdriver.log
 
 # TB default error screenshot folder
 error-screenshots/
+
+# Maven
+.m2/
+.m2/settings.xml
+settings.xml
