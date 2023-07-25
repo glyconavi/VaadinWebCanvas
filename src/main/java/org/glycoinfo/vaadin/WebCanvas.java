@@ -7,8 +7,11 @@ import java.util.function.Consumer;
 
 import org.vaadin.pekkam.Canvas;
 
+import com.vaadin.flow.component.UI;
 import com.vaadin.flow.component.html.Image;
+import com.vaadin.flow.component.orderedlayout.VerticalLayout;
 import com.vaadin.flow.component.page.PendingJavaScriptResult;
+import com.vaadin.flow.dom.Element;
 import com.vaadin.flow.server.StreamResource;
 import com.vaadin.flow.shared.Registration;
 
@@ -18,7 +21,7 @@ import com.vaadin.flow.shared.Registration;
  * Use {@link #getContext()} to get API for rendering shapes and images on the canvas.
  */
 @SuppressWarnings("serial")
-public class WebCanvas extends Canvas implements MouseDownNotifier<WebCanvas>, MouseMoveNotifier<WebCanvas>, MouseUpNotifier<WebCanvas>, SelectionListener {
+public class WebCanvas extends Canvas implements MouseDownNotifier<WebCanvas>, MouseMoveNotifier<WebCanvas>, MouseUpNotifier<WebCanvas>, KeyDownNotifier<WebCanvas>, SelectionListener {
     /**
      * Width of the canvas.
      */
@@ -60,6 +63,7 @@ public class WebCanvas extends Canvas implements MouseDownNotifier<WebCanvas>, M
         // Registers listeners.
         addMouseDownListener();
         addMouseUpListener();
+        addKeyDownListener();
     }
 
     /**
@@ -163,6 +167,18 @@ public class WebCanvas extends Canvas implements MouseDownNotifier<WebCanvas>, M
     }
 
     /**
+     * Adds key down listener.
+     */
+    private void addKeyDownListener() {
+        getElement().setAttribute("tabindex", "0");
+        addKeyDownListener(keyDownEvent -> {
+            if (keyDownEvent.isCtrlKey() && keyDownEvent.getKey().equals("c")) {
+                copyImageToClipboard();
+            }
+        });
+    }
+
+    /**
      * Receives that updates selection on the canvas.
      */
     @Override
@@ -202,6 +218,18 @@ public class WebCanvas extends Canvas implements MouseDownNotifier<WebCanvas>, M
      */
     private void clearRectangleSelection() {
         getRectangleSelectionRenderer();
+    }
+
+    /**
+     * Copies image from canvas to clipboard.
+     */
+    public void copyImageToClipboard() {
+        Element webCanvasElement = getElement();
+        webCanvasElement.executeJs(
+            "this.toBlob(function (blob) {" +
+            "   const item = new ClipboardItem({'image/png': blob});" +
+            "   navigator.clipboard.write([item]);" +
+            "}, 'image/png');");
     }
 
     /**
