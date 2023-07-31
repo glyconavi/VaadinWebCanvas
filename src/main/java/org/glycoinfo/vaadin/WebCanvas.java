@@ -7,9 +7,7 @@ import java.util.function.Consumer;
 
 import org.vaadin.pekkam.Canvas;
 
-import com.vaadin.flow.component.UI;
 import com.vaadin.flow.component.html.Image;
-import com.vaadin.flow.component.orderedlayout.VerticalLayout;
 import com.vaadin.flow.component.page.PendingJavaScriptResult;
 import com.vaadin.flow.dom.Element;
 import com.vaadin.flow.server.StreamResource;
@@ -51,6 +49,11 @@ public class WebCanvas extends Canvas implements MouseDownNotifier<WebCanvas>, M
      * Registration of mouse move listener.
      */
     private Registration mouseMoveListener = null;
+
+    /**
+     * Whether image is being copied to clipboard.
+     */
+    private boolean isBeingCopiedToClipboard = false;
 
     /**
      * Calls super class constructor , registers listeners.
@@ -173,6 +176,7 @@ public class WebCanvas extends Canvas implements MouseDownNotifier<WebCanvas>, M
         getElement().setAttribute("tabindex", "0");
         addKeyDownListener(keyDownEvent -> {
             if (keyDownEvent.isCtrlKey() && keyDownEvent.getKey().equals("c")) {
+                if (isBeingCopiedToClipboard) return;
                 copyImageToClipboard();
             }
         });
@@ -224,12 +228,38 @@ public class WebCanvas extends Canvas implements MouseDownNotifier<WebCanvas>, M
      * Copies image from canvas to clipboard.
      */
     public void copyImageToClipboard() {
+        // Starts copying image to clipboard.
+        isBeingCopiedToClipboard = true;
+
+        // Executes process before copying image to clipboard.
+        beforeCopyImageToClipboard();
+
+        // Copies image to clipboard.
         Element webCanvasElement = getElement();
-        webCanvasElement.executeJs(
+        PendingJavaScriptResult pendingJavaScriptResult = webCanvasElement.executeJs(
             "this.toBlob(function (blob) {" +
             "   const item = new ClipboardItem({'image/png': blob});" +
             "   navigator.clipboard.write([item]);" +
             "}, 'image/png');");
+        pendingJavaScriptResult.then(jsonValue -> {
+            // Executes process after copying image to clipboard.
+            afterCopyImageToClipboard();
+
+            // Ends copying image to clipboard.
+            isBeingCopiedToClipboard = false;
+        });
+    }
+
+    /**
+     * Executes process before copying image to clipboard.
+     */
+    protected void beforeCopyImageToClipboard() {
+    }
+
+    /**
+     * Executes process after copying image to clipboard.
+     */
+    protected void afterCopyImageToClipboard() {
     }
 
     /**
