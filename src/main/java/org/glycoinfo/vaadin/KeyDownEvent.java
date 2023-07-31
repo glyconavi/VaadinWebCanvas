@@ -11,7 +11,7 @@ import com.vaadin.flow.component.EventData;
  *
  * @param <C>
  */
-@DomEvent("keyup")
+@DomEvent("keydown")
 @SuppressWarnings("serial")
 public class KeyDownEvent<C extends Component> extends ComponentEvent<C> {
 
