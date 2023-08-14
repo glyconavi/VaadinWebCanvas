@@ -3,7 +3,7 @@
     <modelVersion>4.0.0</modelVersion>
     <groupId>org.glycoinfo.vaadin</groupId>
     <artifactId>vaadin-web-canvas</artifactId>
-    <version>1.0.0.8</version>
+    <version>1.0.0.9</version>
     <name>Vaadin Web Canvas</name>
     <packaging>${packaging.type}</packaging>
 

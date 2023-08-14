@@ -14,7 +14,7 @@ Add the repository and dependency to your Vaadin 14+ project's pom.xml:
 <dependency>
     <groupId>org.glycoinfo.vaadin</groupId>
     <artifactId>vaadin-web-canvas</artifactId>
-    <version>1.0.0.8</version>
+    <version>1.0.0.9</version>
 </dependency>
 ```
 
