@@ -175,7 +175,7 @@ public class WebCanvas extends Canvas implements MouseDownNotifier<WebCanvas>, M
     private void addKeyDownListener() {
         getElement().setAttribute("tabindex", "0");
         addKeyDownListener(keyDownEvent -> {
-            if (keyDownEvent.isCtrlKey() && keyDownEvent.getKey().equals("c")) {
+            if ((keyDownEvent.isCtrlKey() || keyDownEvent.isMetaKey()) && keyDownEvent.getKey().equals("c")) {
                 if (isBeingCopiedToClipboard) return;
                 copyImageToClipboard();
             }
