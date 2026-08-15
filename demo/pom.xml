@@ -3,7 +3,7 @@
     <modelVersion>4.0.0</modelVersion>
     <groupId>org.glycoinfo.vaadin</groupId>
     <artifactId>vaadin-web-canvas-demo</artifactId>
-    <version>1.0.0.11</version>
+    <version>1.0.0.12</version>
     <name>Vaadin Web Canvas Demo</name>
     <packaging>war</packaging>
 
@@ -71,7 +71,7 @@
         <dependency>
             <groupId>org.glycoinfo.vaadin</groupId>
             <artifactId>vaadin-web-canvas</artifactId>
-            <version>1.0.0.11</version>
+            <version>1.0.0.12</version>
         </dependency>
 
         <!-- Development mode became its own artifact in Vaadin 25 - without it, jetty:run answers
