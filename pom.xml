@@ -123,11 +123,13 @@
                 </configuration>
             </plugin>
             <plugin>
+                <!-- Deliberately without an altDeploymentRepository of its own: a value configured
+                     here would win over -DaltDeploymentRepository on the command line, and silently
+                     - the build says BUILD SUCCESS and stages into target/mvn-repo while you think
+                     you are deploying into a checkout of the repository. distributionManagement
+                     above is the staging default; the command line is how you override it. -->
                 <artifactId>maven-deploy-plugin</artifactId>
                 <version>2.8.2</version>
-                <configuration>
-                    <altDeploymentRepository>vaadin.web.canvas.repo::default::file://${project.build.directory}/mvn-repo</altDeploymentRepository>
-                </configuration>
             </plugin>
         </plugins>
     </build>
