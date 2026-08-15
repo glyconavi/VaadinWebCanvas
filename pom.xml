@@ -19,10 +19,9 @@
         CanvasRenderingContext2D.java): canvas-java 1.0.1 is a Vaadin 14-era artifact that was
         never rebuilt for Vaadin 25, so three import lines went away and two files arrived.
 
-        AppShell and MainView - the demo - are kept as the worked example the README quotes, but
-        they are no longer compiled: MainView draws its download link through
-        VaadinSession.getResourceRegistry(), which Vaadin 25 does not offer. Reviving the demo on
-        Vaadin 25 is its own piece of work, not this one.
+        The demo has moved to demo/, which is its own standalone project: it depends on the
+        published add-on the way a consumer does, so this pom stays a library pom and nothing the
+        demo needs can leak into what is published.
     -->
 
     <properties>
@@ -100,15 +99,10 @@
     </dependencies>
 
     <build>
-        <!-- Bundle the .java sources into the jar as well, matching the original artifact layout.
-             The demo classes are not part of the library and stay out of it. -->
+        <!-- Bundle the .java sources into the jar as well, matching the original artifact layout. -->
         <resources>
             <resource>
                 <directory>src/main/java</directory>
-                <excludes>
-                    <exclude>**/AppShell.*</exclude>
-                    <exclude>**/MainView.*</exclude>
-                </excludes>
             </resource>
         </resources>
         <plugins>
@@ -117,16 +111,6 @@
                 <version>2.4</version>
                 <configuration>
                     <finalName>${project.artifactId}-${project.version}</finalName>
-                </configuration>
-            </plugin>
-            <plugin>
-                <groupId>org.apache.maven.plugins</groupId>
-                <artifactId>maven-compiler-plugin</artifactId>
-                <configuration>
-                    <excludes>
-                        <exclude>**/AppShell.java</exclude>
-                        <exclude>**/MainView.java</exclude>
-                    </excludes>
                 </configuration>
             </plugin>
             <plugin>

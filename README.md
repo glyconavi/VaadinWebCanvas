@@ -38,10 +38,9 @@ webCanvas.toDataURL("image/png", dataURI -> {
     // Calls image dialog to display image.
     String dataURIBase64 = dataURI.replace("data:image/png;base64,", "");
     byte[] imageBytes = Base64.getDecoder().decode(dataURIBase64.getBytes());
-    StreamResource streamResource = new StreamResource("sample.png", () -> new ByteArrayInputStream(imageBytes));
-    Anchor downloadImageAnchor = new Anchor(VaadinSession.getCurrent().getResourceRegistry().registerResource(streamResource).getResource(), "Download Image");
-    downloadImageAnchor.getElement().setAttribute("download", "structures.png");
-    add(downloadImageAnchor);
+    DownloadHandler downloadImage = DownloadHandler.fromInputStream(event -> new DownloadResponse(
+            new ByteArrayInputStream(imageBytes), "structures.png", "image/png", imageBytes.length));
+    add(new Anchor(downloadImage, "Download Image"));
 });
 
 // Adds the image to MainView.
@@ -59,10 +58,13 @@ The build produces the library jar, which is what `mvn deploy` publishes to
 reproduces the published 1.0.0.11 artifact byte for byte.
 
 ### The demo
-`MainView` and `AppShell` are the demo the example above is taken from. They are kept as the
-worked example, but they are no longer compiled or run by the build: `MainView` registers its
-download link through `VaadinSession.getResourceRegistry()`, which Vaadin 25 removed, and the
-demo also needs a servlet container newer than the Jetty 9 it used to run on. The
-`mvn jetty:run -P debug` of earlier versions - and the "Maven Run" task in `.vscode/tasks.json`
-that calls it - therefore no longer work. Bringing the demo up to Vaadin 25 is worth doing and
-has not been done.
+The example above is `demo/`, a small application that runs the add-on the way a consumer does:
+
+```bash
+mvn install          # only needed to try a local change to the add-on
+cd demo && mvn jetty:run   # then http://localhost:8080
+```
+
+It is deliberately not a module of the library build - it depends on the published add-on, so the
+library pom stays a standalone pom, which is what is published and what consumers read. It needs
+Node as well as JDK 21+; Vaadin fetches the frontend toolchain on the first run.
