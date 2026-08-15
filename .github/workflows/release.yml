@@ -1,0 +1,171 @@
+name: Release
+
+# Prepares a release when a version tag is pushed, and then stops and asks.
+#
+# Publishing means committing to glycoinfo/MavenRepository, a different repository, which this
+# workflow deliberately cannot write to: GITHUB_TOKEN does not reach outside this repository, and no
+# token is added to make it. What can be done without any credential is everything that goes wrong -
+# building from the tag, and deploying into a checkout of that repository so Maven merges
+# maven-metadata.xml correctly. Both mistakes made publishing 1.0.0.12 by hand were in those steps:
+#
+#   * -DaltDeploymentRepository was silently overridden by the pom, so the deploy said BUILD SUCCESS
+#     and went to target/mvn-repo instead
+#   * a metadata written into an empty directory lists only the version just built, which would drop
+#     every earlier release from the index
+#
+# So this does that part and hands a human the finished files, a diff to read, and the two commands
+# that push them. The push is the only thing left, and it is the only thing that needs the rights.
+
+on:
+  push:
+    tags: [ '[0-9]+.[0-9]+.[0-9]+.[0-9]+' ]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  issues: write
+
+env:
+  JAVA_VERSION: '25'
+  JAVA_DISTRIBUTION: 'temurin'
+  PUBLISH_TO: glycoinfo/MavenRepository
+  ARTIFACT_PATH: org/glycoinfo/vaadin/vaadin-web-canvas
+
+jobs:
+  prepare:
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Checkout the tag
+      uses: actions/checkout@v5
+
+    - name: Set up JDK ${{ env.JAVA_VERSION }}
+      uses: actions/setup-java@v5
+      with:
+        java-version: ${{ env.JAVA_VERSION }}
+        distribution: ${{ env.JAVA_DISTRIBUTION }}
+
+    - name: Cache Maven dependencies
+      uses: actions/cache@v5
+      with:
+        path: ~/.m2
+        key: ${{ runner.os }}_m2_${{ hashFiles('**/pom.xml') }}
+        restore-keys: ${{ runner.os }}_m2
+
+    # The tag names the version people will resolve; the pom decides what is actually built. If they
+    # disagree, one of them is a mistake, and finding out which is cheaper now than after publishing.
+    - name: The tag and the pom must agree
+      id: version
+      run: |
+        set -euo pipefail
+        pom=$(mvn -B -q help:evaluate -Dexpression=project.version -DforceStdout)
+        tag="${GITHUB_REF_NAME}"
+        echo "version=$pom" >> "$GITHUB_OUTPUT"
+        if [ "$GITHUB_EVENT_NAME" = "workflow_dispatch" ]; then
+            echo "dispatched by hand; building the pom's $pom"
+            exit 0
+        fi
+        if [ "$pom" != "$tag" ]; then
+            echo "tag $tag but pom $pom - one of them is wrong"
+            exit 1
+        fi
+        echo "tag and pom agree on $pom"
+
+    - name: Build
+      run: mvn -B clean package
+
+    # The same guard the build workflow runs. Here it answers a different question: normally a
+    # release tag names a version that is not published yet, and this says so. If it is published and
+    # identical, the tag is being re-run and there is nothing to do. If it is published and
+    # different, publishing would replace a jar people already have.
+    - name: Refuse to rebuild a published version into something different
+      run: ./tools/check-published-version.sh
+
+    # No credential involved: MavenRepository is public, and this only reads it. Sparse, because all
+    # Maven needs from it is this artifact's directory - 36 MB rather than 371 MB.
+    - name: Check out the repository this publishes to
+      run: |
+        set -euo pipefail
+        git clone --depth 1 --filter=blob:none --sparse \
+            "https://github.com/${PUBLISH_TO}.git" publish-target
+        cd publish-target
+        git sparse-checkout set "${ARTIFACT_PATH}"
+
+    # Into the checkout, so Maven merges maven-metadata.xml against what is already published rather
+    # than writing a fresh one that lists this version alone.
+    - name: Deploy into that checkout
+      run: mvn -B deploy -DaltDeploymentRepository="publish::default::file://${GITHUB_WORKSPACE}/publish-target"
+
+    - name: Read back what it produced
+      id: result
+      run: |
+        set -euo pipefail
+        cd publish-target
+        {
+          echo "### Files to publish"
+          echo
+          echo '```'
+          git status --short
+          echo '```'
+          echo
+          echo "### maven-metadata.xml"
+          echo
+          echo '```xml'
+          cat "${ARTIFACT_PATH}/maven-metadata.xml"
+          echo '```'
+        } >> "$GITHUB_STEP_SUMMARY"
+        git status --short | tee ../changed.txt
+
+    - name: Upload the files to publish
+      uses: actions/upload-artifact@v4
+      with:
+        name: publish-${{ steps.version.outputs.version }}
+        path: publish-target/${{ env.ARTIFACT_PATH }}/
+        if-no-files-found: error
+
+    # The prompt. A summary is easy to miss on a run nobody opened; an issue waits, and closes when
+    # the thing is done.
+    - name: Ask a human to push it
+      uses: actions/github-script@v7
+      env:
+        VERSION: ${{ steps.version.outputs.version }}
+      with:
+        script: |
+          const version = process.env.VERSION;
+          const run = `${context.serverUrl}/${context.repo.owner}/${context.repo.repo}/actions/runs/${context.runId}`;
+          const body = [
+            `\`vaadin-web-canvas\` **${version}** is built and staged. Publishing it is a commit to`,
+            `[glycoinfo/MavenRepository](https://github.com/glycoinfo/MavenRepository), which this`,
+            `workflow cannot write to - by design, so that what reaches consumers is pushed by a`,
+            `person who can see what they are pushing.`,
+            ``,
+            `The artifact **publish-${version}** on [the run](${run}) holds the files, already`,
+            `deployed into a checkout of that repository, so \`maven-metadata.xml\` is merged rather`,
+            `than replaced. The run summary shows the diff and the metadata.`,
+            ``,
+            `\`\`\`bash`,
+            `git clone https://github.com/glycoinfo/MavenRepository.git`,
+            `cd MavenRepository && git checkout -b publish/vaadin-web-canvas-${version}`,
+            `# unzip the artifact over org/glycoinfo/vaadin/vaadin-web-canvas/`,
+            `git add -A && git commit -m "Publish vaadin-web-canvas ${version}"`,
+            `git push -u origin publish/vaadin-web-canvas-${version}`,
+            `\`\`\``,
+            ``,
+            `Then open a pull request there, and once it is merged, check it from outside your own`,
+            `cache - naming the repository, or Maven searches Central and reports it simply absent:`,
+            ``,
+            `\`\`\`bash`,
+            `rm -rf ~/.m2/repository/org/glycoinfo/vaadin`,
+            `mvn -U dependency:get -Dartifact=org.glycoinfo.vaadin:vaadin-web-canvas:${version} \\`,
+            `    -DremoteRepositories=https://raw.githubusercontent.com/glycoinfo/MavenRepository/master`,
+            `\`\`\``,
+            ``,
+            `Close this when it resolves. See "How to publish" in the README.`,
+          ].join('\n');
+
+          await github.rest.issues.create({
+            owner: context.repo.owner,
+            repo: context.repo.repo,
+            title: `Publish vaadin-web-canvas ${version} to MavenRepository`,
+            body,
+          });
