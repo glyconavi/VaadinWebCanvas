@@ -53,9 +53,44 @@ webCanvas.toImage(image -> {
 * Clone this repository
 * `mvn package`, with JDK 21 or later
 
-The build produces the library jar, which is what `mvn deploy` publishes to
-[glycoinfo/MavenRepository](https://github.com/glycoinfo/MavenRepository). Built on JDK 25 it
-reproduces the published 1.0.0.11 artifact byte for byte.
+The build produces the library jar. Built on JDK 25 it reproduces the published 1.0.0.11 artifact
+byte for byte.
+
+### How to publish
+Releases go to
+[glycoinfo/MavenRepository](https://github.com/glycoinfo/MavenRepository/tree/master/org/glycoinfo/vaadin/vaadin-web-canvas),
+which is an ordinary git repository served raw over HTTPS: publishing is a commit to it, so it can
+be reviewed and reverted like any other change. Consumers point at
+`https://raw.githubusercontent.com/glycoinfo/MavenRepository/master`.
+
+1. Set the new version in `pom.xml` (and in `demo/pom.xml`, both its own version and the dependency),
+   merge that to `main` the way the project's other releases were merged, and tag it.
+2. Clone the repository you are publishing to, and deploy into your clone:
+   ```bash
+   git clone https://github.com/glycoinfo/MavenRepository.git
+   mvn clean deploy -DaltDeploymentRepository=publish::default::file:///absolute/path/to/MavenRepository
+   ```
+   **Deploy into the clone, not into `target/mvn-repo`.** Maven merges `maven-metadata.xml` against
+   whatever it finds at the destination: into the clone, the new version is appended and `<release>`
+   moves forward; into an empty directory, the metadata it writes lists only the version just built,
+   and copying that over the repository's own would drop every earlier release from it. That is the
+   trap that retired the old `site-maven-plugin` step, which pushed `target/mvn-repo` straight onto
+   `master`.
+3. Check what appeared — the version directory should hold the jar, the pom and their `.md5`/`.sha1`,
+   and `maven-metadata.xml` should still list every earlier version — then commit and open a pull
+   request. 1.0.0.10 and 1.0.0.11 went in this way, as
+   [MavenRepository#2](https://github.com/glycoinfo/MavenRepository/pull/2).
+4. Verify from the outside, not from your own machine's cache:
+   ```bash
+   rm -rf ~/.m2/repository/org/glycoinfo/vaadin
+   mvn -U dependency:get -Dartifact=org.glycoinfo.vaadin:vaadin-web-canvas:<new version>
+   ```
+
+`mvn deploy` on its own stages into `target/mvn-repo` and publishes nothing, so it is safe to run.
+
+**A published version is never rebuilt in place.** Consumers resolve it by coordinates and cache it;
+replacing a jar under a version that is already out gives two different artifacts the same name. If
+something needs changing, it needs a new version.
 
 ### The demo
 The example above is `demo/`, a small application that runs the add-on the way a consumer does:
