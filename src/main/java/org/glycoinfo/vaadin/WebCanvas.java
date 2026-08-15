@@ -1,16 +1,13 @@
 package org.glycoinfo.vaadin;
 
-import java.io.ByteArrayInputStream;
 import java.io.Serializable;
 import java.util.Base64;
 import java.util.function.Consumer;
 
-import org.vaadin.pekkam.Canvas;
 
 import com.vaadin.flow.component.html.Image;
 import com.vaadin.flow.component.page.PendingJavaScriptResult;
 import com.vaadin.flow.dom.Element;
-import com.vaadin.flow.server.StreamResource;
 import com.vaadin.flow.shared.Registration;
 
 /**
@@ -270,8 +267,8 @@ public class WebCanvas extends Canvas implements MouseDownNotifier<WebCanvas>, M
         this.toDataURL(dataURI -> {
             String dataURIBase64 = dataURI.replace("data:image/png;base64,", "");
             byte[] imageBytes = Base64.getDecoder().decode(dataURIBase64.getBytes());
-            StreamResource streamResource = new StreamResource("", () -> new ByteArrayInputStream(imageBytes));
-            Image image = new Image(streamResource, "");
+            Image image = new Image(imageBytes, "canvas.png");
+            image.setAlt("");
             resultHandler.accept(image);
         });
     }

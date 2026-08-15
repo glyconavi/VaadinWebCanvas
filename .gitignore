@@ -84,3 +84,14 @@ error-screenshots/
 .m2/
 .m2/settings.xml
 settings.xml
+# Vaadin generates these into the demo when it runs; index.html beside them is kept, because
+# that one is the app shell a developer may edit.
+demo/src/main/frontend/generated/
+demo/node_modules/
+demo/package.json
+demo/package-lock.json
+demo/pnpm-lock.yaml
+demo/tsconfig.json
+demo/types.d.ts
+demo/vite.config.ts
+demo/vite.generated.ts

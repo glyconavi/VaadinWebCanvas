@@ -5,8 +5,6 @@ import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.List;
 
-import org.vaadin.pekkam.Canvas;
-import org.vaadin.pekkam.CanvasRenderingContext2D;
 
 /**
  * Extended class of base class that renders shapes and images on a canvas using the context.
