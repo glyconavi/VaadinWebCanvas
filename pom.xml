@@ -31,13 +31,22 @@
         <maven.compiler.target>1.8</maven.compiler.target>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
         <vaadin.version>25.2.5</vaadin.version>
-        <github.global.server>github</github.global.server>
     </properties>
 
+    <!--
+        `mvn deploy` stages into target/mvn-repo and publishes nothing; publishing is a deliberate
+        second step, described under "How to publish" in the README. Up to 1.0.0.9 the deploy phase
+        also ran com.github.github:site-maven-plugin, which pushed target/mvn-repo straight onto
+        glycoinfo/MavenRepository's master. That is gone, for a measured reason: a deploy into an
+        empty target/mvn-repo writes a maven-metadata.xml listing only the version just built, and
+        pushing that replaces the repository's own metadata - which lists every release - with it.
+        Deploying into a checkout of the repository instead lets Maven merge the metadata, keeping
+        every version and moving <release> forward, which is what the README's recipe does.
+    -->
     <distributionManagement>
         <repository>
             <id>vaadin.web.canvas.repo</id>
-            <name>VaadinWebCanvas github repository</name>
+            <name>Local staging directory; see "How to publish" in the README</name>
             <url>file://${project.build.directory}/mvn-repo</url>
         </repository>
     </distributionManagement>
@@ -119,29 +128,6 @@
                 <configuration>
                     <altDeploymentRepository>vaadin.web.canvas.repo::default::file://${project.build.directory}/mvn-repo</altDeploymentRepository>
                 </configuration>
-            </plugin>
-            <plugin>
-                <groupId>com.github.github</groupId>
-                <artifactId>site-maven-plugin</artifactId>
-                <version>0.12</version>
-                <configuration>
-                    <message>Maven artifacts for ${project.version}</message>
-                    <noJekyll>true</noJekyll>
-                    <merge>true</merge>
-                    <outputDirectory>${project.build.directory}/mvn-repo</outputDirectory>
-                    <branch>refs/heads/master</branch>
-                    <includes><include>**/*</include></includes>
-                    <repositoryName>MavenRepository</repositoryName>
-                    <repositoryOwner>glycoinfo</repositoryOwner>
-                </configuration>
-                <executions>
-                    <execution>
-                        <goals>
-                            <goal>site</goal>
-                        </goals>
-                        <phase>deploy</phase>
-                    </execution>
-                </executions>
             </plugin>
         </plugins>
     </build>
