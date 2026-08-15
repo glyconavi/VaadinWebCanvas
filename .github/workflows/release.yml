@@ -79,11 +79,13 @@ jobs:
     # identical, the tag is being re-run and there is nothing to do. If it is published and
     # different, publishing would replace a jar people already have.
     - name: Refuse to rebuild a published version into something different
+      id: published
       run: ./tools/check-published-version.sh
 
     # No credential involved: MavenRepository is public, and this only reads it. Sparse, because all
     # Maven needs from it is this artifact's directory - 36 MB rather than 371 MB.
     - name: Check out the repository this publishes to
+      if: steps.published.outputs.state != 'identical'
       run: |
         set -euo pipefail
         git clone --depth 1 --filter=blob:none --sparse \
@@ -94,9 +96,11 @@ jobs:
     # Into the checkout, so Maven merges maven-metadata.xml against what is already published rather
     # than writing a fresh one that lists this version alone.
     - name: Deploy into that checkout
+      if: steps.published.outputs.state != 'identical'
       run: mvn -B deploy -DaltDeploymentRepository="publish::default::file://${GITHUB_WORKSPACE}/publish-target"
 
     - name: Read back what it produced
+      if: steps.published.outputs.state != 'identical'
       id: result
       run: |
         set -euo pipefail
@@ -117,6 +121,7 @@ jobs:
         git status --short | tee ../changed.txt
 
     - name: Upload the files to publish
+      if: steps.published.outputs.state != 'identical'
       uses: actions/upload-artifact@v4
       with:
         name: publish-${{ steps.version.outputs.version }}
@@ -126,6 +131,7 @@ jobs:
     # The prompt. A summary is easy to miss on a run nobody opened; an issue waits, and closes when
     # the thing is done.
     - name: Ask a human to push it
+      if: steps.published.outputs.state != 'identical'
       uses: actions/github-script@v7
       env:
         VERSION: ${{ steps.version.outputs.version }}
@@ -169,3 +175,12 @@ jobs:
             title: `Publish vaadin-web-canvas ${version} to MavenRepository`,
             body,
           });
+
+    # Re-running a tag whose version is already out is not a failure, and it is not a release either.
+    # Said out loud, because a green run with no artifact and no issue is otherwise a puzzle.
+    - name: Nothing to publish
+      if: steps.published.outputs.state == 'identical'
+      run: |
+        echo "${{ steps.version.outputs.version }} is already published, and this tree builds it exactly." \
+          | tee -a "$GITHUB_STEP_SUMMARY"
+        echo "Nothing staged, and nobody asked to push anything." | tee -a "$GITHUB_STEP_SUMMARY"

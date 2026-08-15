@@ -18,8 +18,13 @@ built=target/${ARTIFACT}-${version}.jar
 echo "pom version: $version"
 
 metadata=$(curl -fsSL "${REPO_URL}/${GROUP_PATH}/${ARTIFACT}/maven-metadata.xml" || true)
+# Reported for a caller that cares which of the three answers this was - release.yml asks a
+# person to publish only when there is something to publish.
+report() { [ -n "${GITHUB_OUTPUT:-}" ] && echo "state=$1" >> "$GITHUB_OUTPUT"; return 0; }
+
 if ! grep -q "<version>${version}</version>" <<<"$metadata"; then
     echo "not published yet - nothing to compare against, and nothing to protect"
+    report unpublished
     exit 0
 fi
 
@@ -36,6 +41,7 @@ mkdir -p "$work/pub" "$work/new"
 
 if diff -r "$work/pub" "$work/new" >"$work/diff.txt" 2>&1; then
     echo "identical: $(find "$work/pub" -name '*.class' | wc -l | tr -d ' ') class files match the published $version"
+    report identical
     exit 0
 fi
 
@@ -48,4 +54,5 @@ $(sed 's/^/  /' "$work/diff.txt")
 Bump the version. Replacing a published jar gives two different artifacts the same
 coordinates, and everyone who already resolved it keeps the old one.
 MESSAGE
+report differs
 exit 1
