@@ -82,11 +82,16 @@ be reviewed and reverted like any other change. Consumers point at
    and `maven-metadata.xml` should still list every earlier version — then commit and open a pull
    request. 1.0.0.10 and 1.0.0.11 went in this way, as
    [MavenRepository#2](https://github.com/glycoinfo/MavenRepository/pull/2).
-4. Verify from the outside, not from your own machine's cache:
+4. Verify from the outside, not from your own machine's cache. Name the repository: run from a
+   directory with no pom of its own, `dependency:get` searches Maven Central and nothing else, and
+   reports the artifact as simply absent.
    ```bash
    rm -rf ~/.m2/repository/org/glycoinfo/vaadin
-   mvn -U dependency:get -Dartifact=org.glycoinfo.vaadin:vaadin-web-canvas:<new version>
+   mvn -U dependency:get -Dartifact=org.glycoinfo.vaadin:vaadin-web-canvas:<new version> \
+       -DremoteRepositories=https://raw.githubusercontent.com/glycoinfo/MavenRepository/master
    ```
+   GitHub serves `raw.githubusercontent.com` with a five-minute cache, so a miss right after the
+   merge means wait, not that something went wrong.
 
 `mvn deploy` on its own stages into `target/mvn-repo` and publishes nothing, so it is safe to run.
 
