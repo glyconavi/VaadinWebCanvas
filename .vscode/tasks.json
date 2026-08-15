@@ -22,9 +22,9 @@
             "type": "shell",
             "command": "mvn",
             "args": [
-                "jetty:run",
-                "-P",
-                "debug"
+                "-f",
+                "demo/pom.xml",
+                "jetty:run"
             ],
             "options": {
                 "env": {

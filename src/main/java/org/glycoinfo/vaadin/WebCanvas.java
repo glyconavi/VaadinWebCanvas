@@ -5,7 +5,6 @@ import java.io.Serializable;
 import java.util.Base64;
 import java.util.function.Consumer;
 
-import org.vaadin.pekkam.Canvas;
 
 import com.vaadin.flow.component.html.Image;
 import com.vaadin.flow.component.page.PendingJavaScriptResult;
