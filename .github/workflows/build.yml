@@ -1,0 +1,88 @@
+name: Build
+
+# There was no CI here at all: 1.0.0.10, 1.0.0.11 and 1.0.0.12 were each built on somebody's laptop,
+# and the three pull requests that brought the source home were merged on the word of whoever ran the
+# build. This is the smallest thing that makes a broken tree visible before a merge rather than after.
+#
+# The library has no tests to run - it is a thin wrapper over the browser's canvas, and what it does
+# is only observable in a browser - so this compiles both the library and the demo, and then checks
+# the two things that have actually gone wrong here:
+#
+#   * a published version being rebuilt into something different (tools/check-published-version.sh)
+#   * a deprecated-for-removal Vaadin API creeping back in
+
+on:
+  push:
+    branches: [ main, develop ]
+  pull_request:
+    branches: [ main, develop ]
+  workflow_call:
+
+env:
+  JAVA_DISTRIBUTION: 'temurin'
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    strategy:
+      fail-fast: false
+      matrix:
+        # 21 is the floor the README gives. 25 is what the published artifacts were built on, and is
+        # the one the byte-for-byte comparison below can be strict about: javac orders the synthetic
+        # fields of anonymous classes differently between the two, so the same source gives the same
+        # behaviour and not quite the same bytes.
+        java: [ '21', '25' ]
+
+    steps:
+    - name: Checkout repository
+      uses: actions/checkout@v5
+
+    - name: Set up JDK ${{ matrix.java }}
+      uses: actions/setup-java@v5
+      with:
+        java-version: ${{ matrix.java }}
+        distribution: ${{ env.JAVA_DISTRIBUTION }}
+
+    - name: Cache Maven dependencies
+      uses: actions/cache@v5
+      with:
+        path: ~/.m2
+        key: ${{ runner.os }}_m2_${{ hashFiles('**/pom.xml') }}
+        restore-keys: ${{ runner.os }}_m2
+
+    # install rather than package: the demo depends on the add-on by coordinates, the way a consumer
+    # does, so it has to be in the local repository for the demo build to see this tree rather than
+    # the published one.
+    - name: Build and install the library
+      run: mvn -B clean install
+
+    - name: Build the demo
+      run: mvn -B -f demo/pom.xml clean package
+
+    # Only on the JDK the artifacts are published from. On 21 the class files differ from the
+    # published ones in the layout of two anonymous classes' captured fields, which is javac's
+    # choice rather than a change to the library, and would fail this for the wrong reason.
+    - name: Refuse to rebuild a published version into something different
+      if: matrix.java == '25'
+      run: ./tools/check-published-version.sh
+
+    # Vaadin 25 marks StreamResource, and the Anchor and Image constructors that take one, as
+    # deprecated for removal. The library used them until 1.0.0.12 and now uses none. This keeps
+    # that true: it is far cheaper to not let them back in than to find them again at Vaadin 26.
+    - name: Refuse deprecated-for-removal Vaadin API
+      run: |
+        set -euo pipefail
+        mvn -B -q dependency:build-classpath -Dmdep.outputFile=target/cp.txt
+        javac -nowarn -Xlint:removal -d target/removal-check \
+              -cp "$(cat target/cp.txt)" \
+              $(find src/main/java -name '*.java') 2>&1 | tee target/removal.txt
+        if grep -q '\[removal\]' target/removal.txt; then
+            echo
+            echo "The library is using Vaadin API that is deprecated for removal:"
+            grep '\[removal\]' target/removal.txt
+            echo
+            echo "See how toImage was moved off StreamResource in 1.0.0.12 (PR #4)."
+            exit 1
+        fi
+        echo "no deprecated-for-removal API in use"

@@ -65,39 +65,55 @@ which is an ordinary git repository served raw over HTTPS: publishing is a commi
 be reviewed and reverted like any other change. Consumers point at
 `https://raw.githubusercontent.com/glycoinfo/MavenRepository/master`.
 
-1. Set the new version in `pom.xml` (and in `demo/pom.xml`, both its own version and the dependency),
-   merge that to `main` the way the project's other releases were merged, and tag it.
-2. Clone the repository you are publishing to, and deploy into your clone:
-   ```bash
-   git clone https://github.com/glycoinfo/MavenRepository.git
-   mvn clean deploy -DaltDeploymentRepository=publish::default::file:///absolute/path/to/MavenRepository
-   ```
-   **Deploy into the clone, not into `target/mvn-repo`.** Maven merges `maven-metadata.xml` against
-   whatever it finds at the destination: into the clone, the new version is appended and `<release>`
-   moves forward; into an empty directory, the metadata it writes lists only the version just built,
-   and copying that over the repository's own would drop every earlier release from it. That is the
-   trap that retired the old `site-maven-plugin` step, which pushed `target/mvn-repo` straight onto
-   `master`.
-3. Check what appeared — the version directory should hold the jar, the pom and their `.md5`/`.sha1`,
-   and `maven-metadata.xml` should still list every earlier version — then commit and open a pull
-   request. 1.0.0.10 and 1.0.0.11 went in this way, as
-   [MavenRepository#2](https://github.com/glycoinfo/MavenRepository/pull/2).
-4. Verify from the outside, not from your own machine's cache. Name the repository: run from a
-   directory with no pom of its own, `dependency:get` searches Maven Central and nothing else, and
-   reports the artifact as simply absent.
+Pushing a version tag does everything up to that commit. **The commit itself is yours to make**, and
+that is deliberate: publishing writes to a different repository, so `GITHUB_TOKEN` does not reach it,
+and no token is configured to make it reach. What goes out to consumers is pushed by a person who can
+see what they are pushing.
+
+1. Set the new version in `pom.xml` and in `demo/pom.xml` (its own version and the dependency), merge
+   to `main` the way the project's other releases were merged, and tag it - the tag is the version,
+   e.g. `1.0.0.13`. `.github/workflows/release.yml` refuses a tag that disagrees with the pom.
+2. The workflow builds from the tag, refuses to rebuild a version that is already published into
+   something different, clones MavenRepository and deploys into that clone. It then uploads the
+   result as an artifact named `publish-<version>`, prints the diff and the merged
+   `maven-metadata.xml` in the run summary, and **opens an issue asking for the push**, with the
+   commands in it.
+3. Download the artifact, unzip it over `org/glycoinfo/vaadin/vaadin-web-canvas/` in a clone of
+   MavenRepository, commit, push a branch and open a pull request there. 1.0.0.10 and 1.0.0.11 went
+   in this way, as [MavenRepository#2](https://github.com/glycoinfo/MavenRepository/pull/2), and
+   1.0.0.12 as [#3](https://github.com/glycoinfo/MavenRepository/pull/3).
+4. Once it is merged, verify from the outside rather than from your own cache. Name the repository:
+   run from a directory with no pom of its own, `dependency:get` searches Maven Central and nothing
+   else, and reports the artifact as simply absent.
    ```bash
    rm -rf ~/.m2/repository/org/glycoinfo/vaadin
    mvn -U dependency:get -Dartifact=org.glycoinfo.vaadin:vaadin-web-canvas:<new version> \
        -DremoteRepositories=https://raw.githubusercontent.com/glycoinfo/MavenRepository/master
    ```
    GitHub serves `raw.githubusercontent.com` with a five-minute cache, so a miss right after the
-   merge means wait, not that something went wrong.
+   merge means wait, not that something went wrong. Then close the issue.
+
+#### Doing it by hand
+The workflow only automates what a person would type, so the same thing works locally:
+
+```bash
+git clone https://github.com/glycoinfo/MavenRepository.git
+mvn clean deploy -DaltDeploymentRepository=publish::default::file:///absolute/path/to/MavenRepository
+```
+
+**Deploy into the clone, not into `target/mvn-repo`.** Maven merges `maven-metadata.xml` against
+whatever it finds at the destination: into the clone, the new version is appended and `<release>`
+moves forward; into an empty directory, the metadata it writes lists only the version just built, and
+copying that over the repository's own would drop every earlier release from it. That is the trap
+that retired the old `site-maven-plugin` step, which pushed `target/mvn-repo` straight onto `master`.
 
 `mvn deploy` on its own stages into `target/mvn-repo` and publishes nothing, so it is safe to run.
 
 **A published version is never rebuilt in place.** Consumers resolve it by coordinates and cache it;
 replacing a jar under a version that is already out gives two different artifacts the same name. If
-something needs changing, it needs a new version.
+something needs changing, it needs a new version. `tools/check-published-version.sh` enforces this on
+every build: it compares what the tree builds against the published jar of the same version, class
+file by class file.
 
 ### The demo
 The example above is `demo/`, a small application that runs the add-on the way a consumer does:
