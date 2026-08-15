@@ -53,8 +53,10 @@ webCanvas.toImage(image -> {
 * Clone this repository
 * `mvn package`, with JDK 21 or later
 
-The build produces the library jar. Built on JDK 25 it reproduces the published 1.0.0.11 artifact
-byte for byte.
+The build produces the library jar. When the source came home at 1.0.0.11 the tree built, on JDK 25,
+byte for byte identical to the artifact already published under that version — which is how we know
+this is the source it was built from. That is a statement about 1.0.0.11, not a property to expect
+from every later version: 1.0.0.12 changes `toImage`, so it is a different jar on purpose.
 
 ### How to publish
 Releases go to
